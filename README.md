@@ -1,104 +1,45 @@
-Data Centralization Project
-Table of Contents
+# Data Centralisation Project
 
-    Project Description
-    Technologies Used
-    Installation Instructions
-    Usage Instructions
-    File Structure
-    License
+In this project, we create a local PostgreSQL database. We upload data from various sources, process it, create a database schema, and run SQL queries.
 
-Project Description
+## Key Technologies Used
+- **PostgreSQL**: For the local database.
+- **AWS (S3)**: For storing and retrieving data.
+- **boto3**: AWS SDK for Python, used to interact with S3.
+- **REST API**: For fetching data from external sources.
+- **CSV**: For handling data files.
+- **Python (Pandas)**: For data manipulation and processing.
 
-The Data Centralization Project is a comprehensive solution for centralizing data from various sources into a local PostgreSQL database. The goal of the project is to efficiently extract, clean, process, and store data from remote databases, AWS S3, REST APIs, and more. Once the data is loaded and cleaned, SQL queries are used to generate insights, such as sales performance, store distribution, and product details.
-Key Objectives:
+## Project Structure
+The project contains two folders with code related to different milestones:
+- **Milestone3**: Contains code and tasks completed for the third milestone of the project.
+- **Milestone4**: Contains code and tasks completed for the fourth milestone of the project.
 
-    Extract data from multiple sources.
-    Clean and transform data to ensure integrity and accuracy.
-    Store the data in PostgreSQL with a properly defined schema.
-    Run SQL queries to analyze sales data and other metrics.
+## Project Utils
 
-What I Learned:
+1. **Data Extraction**: In `data_extraction.py`, we store methods responsible for the upload of data into pandas DataFrames from different sources.
+2. **Data Cleaning**: In `data_cleaning.py`, we develop the `DataCleaning` class that cleans different tables uploaded in `data_extraction.py`.
+3. **Uploading Data into the Database**: We write the `DatabaseConnector` class in `database_utils.py`, which initiates the database engine based on credentials provided in the `.yml` file.
+4. **Main Script**: `run.py` contains methods that allows PDFs to be downloaded and directly uploaded to the database.
 
-    Efficiently extracting data from diverse sources, including AWS S3, APIs, and remote databases.
-    Data cleaning techniques using Python (Pandas) to handle missing values and inconsistent data formats.
-    Database schema design and using SQL for data querying.
-    Integration of PostgreSQL with Python for dynamic data processing.
+## Step-by-Step Data Processing
 
-Technologies Used
+We have six sources of data:
 
-    PostgreSQL – For the local database.
-    AWS S3 – For storing and retrieving data from cloud storage.
-    boto3 – AWS SDK for Python, used to interact with S3.
-    Pandas – For data extraction, cleaning, and transformation.
-    REST APIs – To fetch data from remote servers.
-    Tabula – For extracting data from PDFs.
+1. **Remote PostgreSQL Database in AWS Cloud**: The `order_table` is of most interest for the client as it contains actual sales information. Key fields include:
+   - `date_uuid`, `user_uuid`, `card_number`, `store_code`, `product_code`, `product_quantity`.
+   - The first five fields will become foreign keys in our database; hence we clean these columns of any NaNs and missing values. The `product_quantity` field must be an integer.
 
-Installation Instructions
-Prerequisites:
+2. **Remote PostgreSQL Database in AWS Cloud**: User data from the `dim_users` table is also stored in the remote database, using the same upload techniques as in the previous case. The primary key here is the `user_uuid` field.
 
-    Python 3.x installed on your local machine.
-    PostgreSQL installed and running locally.
-    pip for installing required Python packages.
-    An AWS account (if working with AWS services).
+3. **Public Link in AWS Cloud**: The `dim_card_details` table is accessible via a link from the S3 server and stored as a `.pdf` file. We handle reading the `.pdf` using the `tabula` package. The primary key is the card number, which must be converted into a string to avoid issues and cleaned of "?" artifacts.
 
-Steps:
+4. **AWS S3 Bucket**: The `dim_product` table is downloaded using the `boto3` package. The primary key is the `product_code` field. The `product_price` field must be converted into a float, and the `weight` field must be converted into grams (handling units like "kg", "oz", "l", "ml").
 
-    Clone the repository:
-    
+5. **RESTful API**: The `dim_store_details` data is available via a GET method. The `.json` response is converted into a pandas DataFrame. The primary key field is `store_code`.
 
-git clone https://github.com/your-username/data-centralization-project.git
-cd data-centralization-project
+6. **Dim Date Times Data**: This data is available by link. The `.json` response is converted into a pandas DataFrame, with `date_uuid` as the primary key.
 
-Install the required Python packages:
+## General Data Cleaning Notes
 
-    pip install -r requirements.txt
-
-    Configure your PostgreSQL credentials in the config.yml file.
-
-    Ensure you have the necessary AWS credentials set up (for S3 interaction via boto3).
-
-Usage Instructions
-Step 1: Data Extraction
-
-    Run the data_extraction.py script to extract data from various sources like remote databases, AWS S3, and REST APIs.
-
-    bash
-
-    python data_extraction.py
-
-Step 2: Data Cleaning
-
-    Clean the extracted data using the data_cleaning.py script.
-
-    bash
-
-    python data_cleaning.py
-
-Step 3: Upload Data to Database
-
-    Use the main.py script to upload the cleaned data to the local PostgreSQL database.
-
-    bash
-
-    python main.py
-
-Step 4: Running SQL Queries
-
-    You can now perform SQL queries on the centralized data to derive insights, such as total sales per location, store performance, and more.
-
-File Structure
-
-data-centralization-project/
-│
-├── data_extraction.py      # Handles data extraction from various sources
-├── data_cleaning.py        # Cleans the extracted data
-├── database_utils.py       # Contains the DatabaseConnector class for handling DB connections
-├── main.py                 # Orchestrates the uploading of data to PostgreSQL
-├── config.yml              # Contains PostgreSQL and AWS configuration details
-├── requirements.txt        # Lists the required Python packages
-├── README.md               # Project documentation
-
-License
-
-This project is licensed under the MIT License. See the LICENSE file for more details.
+- All data cleaning must be performed concerning the primary key field. Rows are only removed if duplicates (NaNs, missing values, etc.) appear in this field. This prevents issues with foreign keys in the `orders_table`.
